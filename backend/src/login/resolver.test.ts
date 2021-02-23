@@ -9,17 +9,14 @@ import {
 } from "apollo-server-testing";
 
 beforeAll(() => {
-  @Service()
-  class AuthServiceStub {
-    async logIn(_email: string, _password: string): Promise<Tokens> {
-      return Object.assign(new Tokens(), {
-        access: "a",
-        refresh: "b",
-      });
-    }
-  }
+  Container.set("log-in", async (_email: string, _password: string) => {
+    return Object.assign(new Tokens(), {
+      access: "a",
+      refresh: "b",
+    });
+  });
 
-  Container.set("auth-service", new AuthServiceStub());
+  Container.set("renew-tokens", null);
 });
 
 test("logIn", async () => {

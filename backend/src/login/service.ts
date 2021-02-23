@@ -12,69 +12,68 @@ class Tokens {
   refresh!: string;
 }
 
-interface AuthService {
-  logIn(email: string, password: string): Promise<Tokens>;
-  refreshTokens(refreshToken: string): Promise<Tokens>;
-}
-
-@Service()
-class RealAuthService {
-  /**
-   * @throws {ValidationFailed, EnvNotFound}
-   */
-  async logIn(email: string, password: string): Promise<Tokens> {
-    if (!this.valid(email, password)) {
-      throw new ValidationFailed("invalid login");
-    }
-
-    if (process.env.PRIVATE_KEY === undefined) {
-      throw new EnvNotFound("private key is undefined");
-    }
-
-    let accessToken = sign({ email: email }, process.env.PRIVATE_KEY, {
-      expiresIn: "1h",
-    });
-
-    let refreshToken = sign({ email: email }, process.env.PRIVATE_KEY, {
-      expiresIn: "1d",
-    });
-
-    return Object.assign(new Tokens(), {
-      access: accessToken,
-      refresh: refreshToken,
-    });
+/**
+ * @throws {ValidationFailed, EnvNotFound}
+ */
+const logIn = (db: any) => async (
+  email: string,
+  password: string
+): Promise<Tokens> => {
+  if (!(await valid(db, email, password))) {
+    throw new ValidationFailed("invalid login");
   }
 
-  /**
-   * @throws {ValidationFailed, EnvNotFound, JsonWebTokenError}
-   */
-  async refresh(email: string, token: string): Promise<Tokens> {
-    if (process.env.PRIVATE_KEY === undefined) {
-      throw new EnvNotFound("private key is undefined");
-    }
-
-    let decoded: any = verify(token, process.env.PRIVATE_KEY);
-    if (decoded.email !== email) {
-      throw new ValidationFailed("decoded email doesn't match");
-    }
-
-    let accessToken = sign({ email: email }, process.env.PRIVATE_KEY, {
-      expiresIn: "1h",
-    });
-
-    let refreshToken = sign({ email: decoded.email }, process.env.PRIVATE_KEY, {
-      expiresIn: "1d",
-    });
-
-    return Object.assign(new Tokens(), {
-      access: accessToken,
-      refresh: refreshToken,
-    });
+  if (process.env.PRIVATE_KEY === undefined) {
+    throw new EnvNotFound("private key is undefined");
   }
 
-  async valid(email: string, password: string): Promise<boolean> {
-    throw "now implemented!";
-  }
-}
+  let accessToken = sign({ email: email }, process.env.PRIVATE_KEY, {
+    expiresIn: "1h",
+  });
 
-export { AuthService, RealAuthService, Tokens };
+  let refreshToken = sign({ email: email }, process.env.PRIVATE_KEY, {
+    expiresIn: "1d",
+  });
+
+  return Object.assign(new Tokens(), {
+    access: accessToken,
+    refresh: refreshToken,
+  });
+};
+
+const valid = async (
+  db: any,
+  email: string,
+  password: string
+): Promise<boolean> => {
+  throw "now implemented!";
+};
+
+/**
+ * @throws {ValidationFailed, EnvNotFound, JsonWebTokenError}
+ */
+const refreshTokens = async (email: string, token: string): Promise<Tokens> => {
+  if (process.env.PRIVATE_KEY === undefined) {
+    throw new EnvNotFound("private key is undefined");
+  }
+
+  let decoded: any = verify(token, process.env.PRIVATE_KEY);
+  if (decoded.email !== email) {
+    throw new ValidationFailed("decoded email doesn't match");
+  }
+
+  let accessToken = sign({ email: email }, process.env.PRIVATE_KEY, {
+    expiresIn: "1h",
+  });
+
+  let refreshToken = sign({ email: decoded.email }, process.env.PRIVATE_KEY, {
+    expiresIn: "1d",
+  });
+
+  return Object.assign(new Tokens(), {
+    access: accessToken,
+    refresh: refreshToken,
+  });
+};
+
+export { logIn, refreshTokens, Tokens };
